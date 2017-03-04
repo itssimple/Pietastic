@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pietastic.WebUpdateService", "Pietastic.WebUpdateService\Pietastic.WebUpdateService.csproj", "{92172EF2-443A-4A65-88B4-F8E58CB7DB46}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pietastic.InstallerUpdater", "Pietastic.InstallerUpdater\Pietastic.InstallerUpdater.csproj", "{0A466E1D-6D4C-4E8C-8BD9-BB041E4E5271}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +24,10 @@ Global
 		{92172EF2-443A-4A65-88B4-F8E58CB7DB46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92172EF2-443A-4A65-88B4-F8E58CB7DB46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92172EF2-443A-4A65-88B4-F8E58CB7DB46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A466E1D-6D4C-4E8C-8BD9-BB041E4E5271}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A466E1D-6D4C-4E8C-8BD9-BB041E4E5271}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A466E1D-6D4C-4E8C-8BD9-BB041E4E5271}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A466E1D-6D4C-4E8C-8BD9-BB041E4E5271}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

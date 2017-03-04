@@ -2,6 +2,7 @@
 using NuGet;
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -10,12 +11,31 @@ namespace Pietastic.InstallerUpdater
 	class Program
 	{
 		[STAThread]
-		static int Main(string[] args)
+		static int Main(params string[] args)
 		{
+			bool uninstall = false;
+			bool upgrade = false;
 			string packageName = ConfigurationManager.AppSettings["pietastic_packageName"] ?? string.Empty;
 			if (args.Length > 0)
 			{
-				packageName = string.Join(" ", args);
+				switch (args[0])
+				{
+					case "uninstall":
+						if(string.IsNullOrWhiteSpace(packageName))
+							packageName = string.Join(" ", args.Skip(1));
+						uninstall = true;
+						break;
+					case "upgrade":
+						upgrade = false;
+						if (string.IsNullOrWhiteSpace(packageName))
+							packageName = string.Join(" ", args);
+						break;
+					default:
+						upgrade = true;
+						if (string.IsNullOrWhiteSpace(packageName))
+							packageName = string.Join(" ", args);
+						break;
+				}
 			}
 			if (string.IsNullOrWhiteSpace(packageName)) return -1;
 
@@ -30,6 +50,13 @@ namespace Pietastic.InstallerUpdater
 					Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
 					packageName
 				);
+
+				if (uninstall)
+				{
+					Uninstall(packagePath);
+					Process.GetCurrentProcess().Kill();
+					return 0;
+				}
 
 				Console.WriteLine("Creating App directory");
 				Console.WriteLine(packagePath);
@@ -117,10 +144,18 @@ namespace Pietastic.InstallerUpdater
 					CreateShortcut(desktopShortcut, symLinkPath);
 					Console.WriteLine(desktopShortcut);
 				}
+
+				if (!upgrade)
+				{
+					ProcessStartInfo launch = new ProcessStartInfo(desktopShortcut);
+					var p = Process.Start(launch);
+					p.WaitForExit();
+					Main("upgrade " + packageName);
+				}
 				
 				return 0;
 			}
-
+			Console.WriteLine("Package: " + packageName + " was not found, check your spelling");
 			return 1;
 		}
 
@@ -132,6 +167,22 @@ namespace Pietastic.InstallerUpdater
 			shortcut.Description = description;   // The description of the shortcut
 			shortcut.TargetPath = targetFileLocation;                 // The path of the file that will launch when the shortcut is run
 			shortcut.Save();                                    // Save the shortcut
+		}
+
+		internal static void RegisterAsInstalled(string applicationName)
+		{
+			
+		}
+
+		internal static void Uninstall(string applicationPath)
+		{
+			/*ProcessStartInfo Info = new ProcessStartInfo();
+			Info.Arguments = "/C choice /C Y /N /D Y /T 3 & RMDIR /Q /S " +
+						   applicationPath;
+			Info.WindowStyle = ProcessWindowStyle.Hidden;
+			Info.CreateNoWindow = true;
+			Info.FileName = "cmd.exe";
+			Process.Start(Info);*/
 		}
 	}
 }

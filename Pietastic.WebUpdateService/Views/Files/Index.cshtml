@@ -1,0 +1,15 @@
+﻿@model List<NuGet.IPackage>
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+@Model.Count packages
+
+@foreach (var package in Model)
+{
+	<div class="nugetpackage">
+		<a href="@Url.Action("GetSoftware", "Files", new { fileName = package.Id })">@package.Id</a>, @package.Version.ToFullString()
+	</div>
+}

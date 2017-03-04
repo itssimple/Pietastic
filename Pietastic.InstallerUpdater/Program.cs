@@ -125,7 +125,7 @@ namespace Pietastic.InstallerUpdater
 					{
 						Console.WriteLine("Modifying/Creating symlink");
 
-						symLinkPath = Path.Combine(packagePath, f.Path);
+						symLinkPath = Path.Combine(packagePath, "app-" + f.Path);
 						if (SymbolicLink.Exists(symLinkPath))
 							System.IO.File.Delete(symLinkPath);
 						SymbolicLink.CreateFileLink(symLinkPath, lFile);
@@ -137,26 +137,21 @@ namespace Pietastic.InstallerUpdater
 					using (var fs = f.GetStream())
 					{
 						System.IO.File.WriteAllBytes(lFile, fs.ReadAllBytes());
-						if (f.Path != latestVersion.Id + ".exe") continue;
-
 					}
 				}
-				
+
 				var desktopShortcut = Path.Combine(
 					Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
 					(latestVersion.Title ?? packageName) + ".lnk"
 				);
 
-				if (!string.IsNullOrWhiteSpace(symLinkPath))
-				{
-					if (System.IO.File.Exists(desktopShortcut)) System.IO.File.Delete(desktopShortcut);
-					CreateShortcut(desktopShortcut, symLinkPath);
-					Console.WriteLine(desktopShortcut);
-				}
+				if (System.IO.File.Exists(desktopShortcut)) System.IO.File.Delete(desktopShortcut);
+				CreateShortcut(desktopShortcut, launcherFile);
+				Console.WriteLine(desktopShortcut);
 
 				if (!upgrade)
 				{
-					ProcessStartInfo launch = new ProcessStartInfo(desktopShortcut);
+					ProcessStartInfo launch = new ProcessStartInfo(symLinkPath);
 					var p = Process.Start(launch);
 					p.WaitForExit();
 					Main("upgrade " + packageName);

@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace Pietastic.InstallerUpdater
 {
@@ -13,27 +14,25 @@ namespace Pietastic.InstallerUpdater
 		[STAThread]
 		static int Main(params string[] args)
 		{
+			var cBase = Assembly.GetExecutingAssembly().CodeBase.Replace("file:///", "").Replace("/", "\\");
+			var fileName = cBase.Substring(cBase.LastIndexOf('\\') + 1);
+			fileName = fileName.Substring(0, fileName.LastIndexOf('.'));
+			Console.WriteLine("Package: " + fileName);
 			bool uninstall = false;
 			bool upgrade = false;
-			string packageName = ConfigurationManager.AppSettings["pietastic_packageName"] ?? string.Empty;
+			string packageName = fileName;
 			if (args.Length > 0)
 			{
 				switch (args[0])
 				{
 					case "uninstall":
-						if(string.IsNullOrWhiteSpace(packageName))
-							packageName = string.Join(" ", args.Skip(1));
 						uninstall = true;
 						break;
 					case "upgrade":
 						upgrade = false;
-						if (string.IsNullOrWhiteSpace(packageName))
-							packageName = string.Join(" ", args);
 						break;
 					default:
 						upgrade = true;
-						if (string.IsNullOrWhiteSpace(packageName))
-							packageName = string.Join(" ", args);
 						break;
 				}
 			}
@@ -62,6 +61,12 @@ namespace Pietastic.InstallerUpdater
 				Console.WriteLine(packagePath);
 				Directory.CreateDirectory(packagePath);
 
+				var launcherFile = Path.Combine(packagePath, packageName + ".exe");
+				if (!System.IO.File.Exists(launcherFile))
+				{
+					System.IO.File.Copy(cBase, launcherFile);
+				}
+
 				var programPackages = Path.Combine(packagePath, "packages");
 
 				Console.WriteLine("Creating Packages directory");
@@ -86,7 +91,7 @@ namespace Pietastic.InstallerUpdater
 					DirectoryInfo di = new DirectoryInfo(programPackages);
 
 					var allPackages = di.EnumerateFiles("*.nupkg").ToList();
-					
+
 					if (allPackages.Count > 0)
 					{
 						// Enumerate all packages, remove old packages, keep 3 latest
@@ -106,38 +111,42 @@ namespace Pietastic.InstallerUpdater
 						System.IO.File.WriteAllBytes(latestPackage, fs.ReadAllBytes());
 					}
 				}
+
 				string symLinkPath = string.Empty;
-				if (!Directory.Exists(latestInstalled))
+
+				Console.WriteLine("Installing latest version");
+				Directory.CreateDirectory(latestInstalled);
+
+				var fz = new ZipPackage(latestPackage);
+				foreach (var f in fz.GetFiles())
 				{
-					Console.WriteLine("Installing latest version");
-					Directory.CreateDirectory(latestInstalled);
-
-					var fz = new ZipPackage(latestPackage);
-					foreach (var f in fz.GetFiles())
+					var lFile = Path.Combine(latestInstalled, f.Path);
+					if (f.Path == latestVersion.Id + ".exe")
 					{
-						var lFile = Path.Combine(latestInstalled, f.Path);
-						if (System.IO.File.Exists(lFile)) continue;
+						Console.WriteLine("Modifying/Creating symlink");
 
-						using (var fs = f.GetStream())
-						{
-							System.IO.File.WriteAllBytes(lFile, fs.ReadAllBytes());
-							if (f.Path != latestVersion.Id + ".exe") continue;
-							Console.WriteLine("Modifying/Creating symlink");
+						symLinkPath = Path.Combine(packagePath, f.Path);
+						if (SymbolicLink.Exists(symLinkPath))
+							System.IO.File.Delete(symLinkPath);
+						SymbolicLink.CreateFileLink(symLinkPath, lFile);
+						Console.WriteLine(symLinkPath);
+					}
 
-							symLinkPath = Path.Combine(packagePath, f.Path);
-							if (SymbolicLink.Exists(symLinkPath))
-								System.IO.File.Delete(symLinkPath);
-							SymbolicLink.CreateFileLink(symLinkPath, lFile);
-							Console.WriteLine(symLinkPath);
-						}
+					if (System.IO.File.Exists(lFile)) continue;
+
+					using (var fs = f.GetStream())
+					{
+						System.IO.File.WriteAllBytes(lFile, fs.ReadAllBytes());
+						if (f.Path != latestVersion.Id + ".exe") continue;
+
 					}
 				}
-
+				
 				var desktopShortcut = Path.Combine(
 					Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
 					(latestVersion.Title ?? packageName) + ".lnk"
 				);
-				
+
 				if (!string.IsNullOrWhiteSpace(symLinkPath))
 				{
 					if (System.IO.File.Exists(desktopShortcut)) System.IO.File.Delete(desktopShortcut);
@@ -152,10 +161,10 @@ namespace Pietastic.InstallerUpdater
 					p.WaitForExit();
 					Main("upgrade " + packageName);
 				}
-				
+
 				return 0;
 			}
-			Console.WriteLine("Package: " + packageName + " was not found, check your spelling");
+			Console.WriteLine("Package: " + packageName + " was not found, please rename file");
 			return 1;
 		}
 
@@ -171,7 +180,7 @@ namespace Pietastic.InstallerUpdater
 
 		internal static void RegisterAsInstalled(string applicationName)
 		{
-			
+
 		}
 
 		internal static void Uninstall(string applicationPath)

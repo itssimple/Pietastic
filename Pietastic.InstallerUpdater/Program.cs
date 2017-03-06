@@ -121,6 +121,14 @@ namespace Pietastic.InstallerUpdater
 				foreach (var f in fz.GetFiles())
 				{
 					var lFile = Path.Combine(latestInstalled, f.Path);
+					
+					if (System.IO.File.Exists(lFile)) continue;
+
+					using (var fs = f.GetStream())
+					{
+						System.IO.File.WriteAllBytes(lFile, fs.ReadAllBytes());
+					}
+
 					if (f.Path == latestVersion.Id + ".exe")
 					{
 						Console.WriteLine("Modifying/Creating symlink");
@@ -130,13 +138,6 @@ namespace Pietastic.InstallerUpdater
 							System.IO.File.Delete(symLinkPath);
 						SymbolicLink.CreateFileLink(symLinkPath, lFile);
 						Console.WriteLine(symLinkPath);
-					}
-
-					if (System.IO.File.Exists(lFile)) continue;
-
-					using (var fs = f.GetStream())
-					{
-						System.IO.File.WriteAllBytes(lFile, fs.ReadAllBytes());
 					}
 				}
 
